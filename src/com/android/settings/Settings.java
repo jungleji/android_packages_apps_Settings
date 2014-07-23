@@ -96,6 +96,8 @@ import com.android.settings.cyanogenmod.NotificationDrawer;
 import com.android.settings.cyanogenmod.superuser.PolicyNativeFragment;
 import com.android.settings.deviceinfo.Memory;
 import com.android.settings.deviceinfo.UsbSettings;
+import com.android.settings.ethernet.EthernetEnabler;
+import com.android.settings.ethernet.EthernetSettings;
 import com.android.settings.fuelgauge.PowerUsageSummary;
 import com.android.settings.headsup.HeadsUpSettings;
 import com.android.settings.inputmethod.InputMethodAndLanguageSettings;
@@ -142,6 +144,51 @@ import java.util.List;
 public class Settings extends PreferenceActivity
         implements ButtonBarHandler, OnAccountsUpdateListener,
         OnItemClickListener {
+
+    //put the menu item's id-Feature into HashMap
+    //it refers to settings_disabled_menu_list.xml
+    public final static HashMap<Integer, String> mConfigMap = new HashMap<Integer, String>();
+    static{
+    //WIRELESS and NETWORKS
+        mConfigMap.put(R.id.wifi_settings,"android.settings.wifi");
+        mConfigMap.put(R.id.bluetooth_settings,"android.settings.bluetooth");
+        mConfigMap.put(R.id.ethernet_settings,"android.settings.ethernet");
+        mConfigMap.put(R.id.data_usage_settings,"android.settings.data_usage");
+        mConfigMap.put(R.id.operator_settings,"android.settings.operator");
+        mConfigMap.put(R.id.wireless_settings,"android.settings.wireless");
+    //DEVICE
+	// mConfigMap.put(R.id.usb_settings, "android.settings.usb");
+        mConfigMap.put(R.id.sound_settings,"android.settings.sound");
+        mConfigMap.put(R.id.display_settings,"android.settings.display");
+        //mConfigMap.put(R.id.screen_settings,"android.settings.screen");
+        mConfigMap.put(R.id.storage_settings,"android.settings.storage");
+        mConfigMap.put(R.id.battery_settings,"com.android.settings.battery");
+        mConfigMap.put(R.id.application_settings,"android.settings.application");
+        mConfigMap.put(R.id.user_settings,"android.settings.user");
+        mConfigMap.put(R.id.manufacturer_settings,"android.settings.manufacturer");
+    //PERSONAL
+        mConfigMap.put(R.id.location_settings,"android.settings.location");
+        mConfigMap.put(R.id.security_settings,"android.settings.security");
+        mConfigMap.put(R.id.language_settings,"android.settings.language");
+        mConfigMap.put(R.id.privacy_settings,"android.settings.privacy");
+    //ACCOUNTS
+        mConfigMap.put(R.id.account_settings,"android.settings.account");
+        mConfigMap.put(R.id.account_add,"android.settings.account_add");
+    //SYSTEM
+        mConfigMap.put(R.id.system_section,"android.settings.system");
+        mConfigMap.put(R.id.date_time_settings,"android.settings.date_time");
+        mConfigMap.put(R.id.accessibility_settings,"android.settings.accessibility");
+        mConfigMap.put(R.id.development_settings,"android.settings.development");
+        mConfigMap.put(R.id.about_settings,"android.settings.about");
+    };
+
+    private boolean isDisabled(int id){
+        //check from system feature to see if it is not available. add by ljh
+        if (getPackageManager().hasSystemFeature(mConfigMap.get(id))) {
+            return true;
+        }
+        return false;
+    }
 
     private static final String LOG_TAG = "Settings";
 
@@ -431,6 +478,7 @@ public class Settings extends PreferenceActivity
     private static final String[] ENTRY_FRAGMENTS = {
         WirelessSettings.class.getName(),
         WifiSettings.class.getName(),
+        EthernetSettings.class.getName(),
         AdvancedWifiSettings.class.getName(),
         BluetoothSettings.class.getName(),
         TetherSettings.class.getName(),
@@ -700,6 +748,11 @@ public class Settings extends PreferenceActivity
                 // Remove WiFi Settings if WiFi service is not available.
                 if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI)) {
                     target.remove(i);
+                }
+            } else if (id == R.id.ethernet_settings) {
+                // Remove Ethernet Settings if Ethernet service is not available.
+                if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_ETHERNET)) {
+                    target.remove(header);
                 }
             } else if (id == R.id.bluetooth_settings) {
                 // Remove Bluetooth Settings if Bluetooth service is not available.
@@ -995,6 +1048,7 @@ public class Settings extends PreferenceActivity
         private static final int HEADER_TYPE_COUNT = HEADER_TYPE_BUTTON + 1;
 
         private final WifiEnabler mWifiEnabler;
+        private final EthernetEnabler mEthernetEnabler;
         private final BluetoothEnabler mBluetoothEnabler;
         private final MobileDataEnabler mMobileDataEnabler;
         private final ProfileEnabler mProfileEnabler;
@@ -1018,6 +1072,7 @@ public class Settings extends PreferenceActivity
             if (header.fragment == null && header.intent == null) {
                 return HEADER_TYPE_CATEGORY;
             } else if (header.id == R.id.wifi_settings
+                    || header.id == R.id.ethernet_settings
                     || header.id == R.id.bluetooth_settings
                     || header.id == R.id.mobile_network_settings
                     || header.id == R.id.profiles_settings
@@ -1067,6 +1122,7 @@ public class Settings extends PreferenceActivity
             // Temp Switches provided as placeholder until the adapter replaces these with actual
             // Switches inflated from their layouts. Must be done before adapter is set in super
             mWifiEnabler = new WifiEnabler(context, new Switch(context));
+            mEthernetEnabler = new EthernetEnabler(context, new Switch(context));
             mBluetoothEnabler = new BluetoothEnabler(context, new Switch(context));
             mMobileDataEnabler = new MobileDataEnabler(context, new Switch(context));
             mProfileEnabler = new ProfileEnabler(context, new Switch(context));
@@ -1141,6 +1197,8 @@ public class Settings extends PreferenceActivity
                     // Would need a different treatment if the main menu had more switches
                     if (header.id == R.id.wifi_settings) {
                         mWifiEnabler.setSwitch(holder.switch_);
+                    } else if (header.id == R.id.ethernet_settings) {
+                        mEthernetEnabler.setSwitch(holder.switch_);
                     } else if (header.id == R.id.bluetooth_settings) {
                         mBluetoothEnabler.setSwitch(holder.switch_);
                     } else if (header.id == R.id.mobile_network_settings) {
@@ -1223,6 +1281,7 @@ public class Settings extends PreferenceActivity
 
         public void resume() {
             mWifiEnabler.resume();
+            mEthernetEnabler.resume();
             mBluetoothEnabler.resume();
             mMobileDataEnabler.resume();
             mProfileEnabler.resume();
@@ -1232,6 +1291,7 @@ public class Settings extends PreferenceActivity
 
         public void pause() {
             mWifiEnabler.pause();
+            mEthernetEnabler.pause();
             mBluetoothEnabler.pause();
             mMobileDataEnabler.pause();
             mProfileEnabler.pause();
@@ -1328,6 +1388,7 @@ public class Settings extends PreferenceActivity
     public static class StorageSettingsActivity extends Settings { /* empty */ }
     public static class WifiSettingsActivity extends Settings { /* empty */ }
     public static class WifiP2pSettingsActivity extends Settings { /* empty */ }
+    public static class EthernetSettingsActivity extends Settings { /*empty */ }
     public static class InputMethodAndLanguageSettingsActivity extends Settings { /* empty */ }
     public static class KeyboardLayoutPickerActivity extends Settings { /* empty */ }
     public static class InputMethodAndSubtypeEnablerActivity extends Settings { /* empty */ }
